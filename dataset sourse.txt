@@ -1,0 +1,8 @@
+https://www.kaggle.com/datasets/yaaryiitturan/global-tech-salary-dataset?select=global_tech_salary.txt
+- Global Tech Salary Dataset
+
+https://www.kaggle.com/datasets/iramshahzadi9/remote-work-and-mental-health
+-Remote Work & Mental Health
+
+https://www.kaggle.com/datasets/osmi/mental-health-in-tech-survey
+- Mental Health in Tech Survey
