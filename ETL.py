@@ -6,6 +6,23 @@ import psycopg2
 from psycopg2.extras import execute_batch
 import json
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+import plotly.express as px
+import plotly.io as pio
+import dash
+from dash import dcc, html
+import dash_bootstrap_components as dbc
+from fpdf import FPDF
+import os
+import sys
+from pathlib import Path
+import logging
+import traceback
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+import seaborn as sns
+from datetime import datetime
+
 
 
  --- Data Extraction and MongoDB Storage ---
@@ -32,7 +49,7 @@ def extract_and_store_data(context):
         
         salary_df = pd.DataFrame(salary_records, columns=salary_columns)
         context.log.info(f"Loaded {len(salary_df)} records from Employee_salary.json")
-     # Process Job_satisfaction.csv
+# Process Job_satisfaction.csv
         job_satisfaction_path = Path('Job_satisfaction.csv')
         if not job_satisfaction_path.exists():
             raise FileNotFoundError(f"Input file not found: {job_satisfaction_path}")
