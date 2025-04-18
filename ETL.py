@@ -8,56 +8,28 @@ import json
 import numpy as np
 
 
-# Data Extraction and  storing it in MongoDB
+ --- Data Extraction and MongoDB Storage ---
 
-@op(out={"status": Out(), "d1_count": Out(), "d2_count": Out()})
-def extract_and_store_csv_data(context):
-    """Extract CSV data and store in MongoDB"""
+@op(out={"status": Out(), "salary_count": Out(), "job_satisfaction_count": Out(), "mental_health_count": Out()})
+def extract_and_store_data(context):
+    """Extract all data sources and store in MongoDB"""
     try:
-        context.log.info("Starting CSV extraction...")
+        context.log.info("Starting data extraction...")
         
-        # Process d1.csv (Mental Health Survey)
-        d1_path = Path('employee_survey.csv')
-        if not d1_path.exists():
-            raise FileNotFoundError(f"Input file not found: {d1_path}")
+        # Process Employee_salary.json
+        salary_path = Path('Employee_salary.json')
+        if not salary_path.exists():
+            raise FileNotFoundError(f"Input file not found: {salary_path}")
         
-        df_d1 = pd.read_csv(d1_path)
-        context.log.info(f"Loaded {len(df_d1)} records from employee_survey.csv")
+        with open(salary_path) as f:
+            salary_data = json.load(f)
         
-        # Process d2.csv (Employee Data)
-        d2_path = Path('employee_mentalhealth2.csv')
-        if not d2_path.exists():
-            raise FileNotFoundError(f"Input file not found: {d2_path}")
+        # Extract the actual data rows from the JSON structure
+        salary_records = salary_data.get('data', [])
+        salary_columns = ['row_id', 'uuid', 'position', 'created_at', 'created_meta', 
+                         'updated_at', 'updated_meta', 'meta', 'date_day', 'statefips', 
+                         'state_name', 'emp_ss40', 'emp_ss60', 'emp_ss65', 'emp_ss70']
         
-        df_d2 = pd.read_csv(d2_path)
-        context.log.info(f"Loaded {len(df_d2)} records from employee_mentalhealth.csv")
+        salary_df = pd.DataFrame(salary_records, columns=salary_columns)
+        context.log.info(f"Loaded {len(salary_df)} records from Employee_salary.json")
         
-        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
-        try:
-            client.server_info()
-        except pymongo.errors.ServerSelectionTimeoutError:
-            raise ConnectionError("Could not connect to MongoDB server")
-            
-        db = client["workforce_data"]
-        
-        # Store d1 data
-        collection_d1 = db["mental_health_survey"]
-        collection_d1.drop()
-        result_d1 = collection_d1.insert_many(df_d1.to_dict('records'))
-        context.log.info(f"Inserted {len(result_d1.inserted_ids)} documents to mental_health_survey")
-        
-        # Store d2 data
-        collection_d2 = db["employee_data"]
-        collection_d2.drop()
-        result_d2 = collection_d2.insert_many(df_d2.to_dict('records'))
-        context.log.info(f"Inserted {len(result_d2.inserted_ids)} documents to employee_data")
-        
-        client.close()
-        
-        yield Output("CSV data stored in MongoDB", output_name="status")
-        yield Output(len(df_d1), output_name="d1_count")
-        yield Output(len(df_d2), output_name="d2_count")
-    except Exception as e:
-        context.log.error(f"Error in extract_and_store_csv_data: {str(e)}")
-        context.log.error(traceback.format_exc())
-        raise
