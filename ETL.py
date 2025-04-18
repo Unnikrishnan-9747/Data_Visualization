@@ -41,7 +41,7 @@ def extract_and_store_data(context):
         with open(salary_path) as f:
             salary_data = json.load(f)
         
-        # Extract the actual data rows from the JSON structure
+   # Extract the data rows from the JSON structure
         salary_records = salary_data.get('data', [])
         salary_columns = ['row_id', 'uuid', 'position', 'created_at', 'created_meta', 
                          'updated_at', 'updated_meta', 'meta', 'date_day', 'statefips', 
@@ -57,7 +57,7 @@ def extract_and_store_data(context):
         job_satisfaction_df = pd.read_csv(job_satisfaction_path)
         context.log.info(f"Loaded {len(job_satisfaction_df)} records from Job_satisfaction.csv")
      
-      # Process Mental_health.csv
+  # Process Mental_health.csv
         mental_health_path =   Path('Mental_health.csv')
         if not mental_health_path.exists():
             raise FileNotFoundError(f"Input file not found : {mental_health_path}")
