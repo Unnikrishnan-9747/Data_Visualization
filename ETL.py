@@ -57,4 +57,12 @@ def extract_and_store_data(context):
         
         job_satisfaction_df = pd.read_csv(job_satisfaction_path)
         context.log.info(f"Loaded {len(job_satisfaction_df)} records from Job_satisfaction.csv")
+     
+      # Process Mental_health.csv
+        mental_health_path =   Path('Mental_health.csv')
+        if not mental_health_path.exists():
+            raise FileNotFoundError(f"Input file not found : {mental_health_path}")
+        
+        mental_health_df  =   pd.read_csv(mental_health_path)
+        context.log.info(f"Loaded {len(mental_health_df)}  records from Mental_health.csv")
         
