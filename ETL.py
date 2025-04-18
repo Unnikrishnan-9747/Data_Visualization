@@ -49,8 +49,7 @@ def extract_and_store_data(context):
         
         salary_df = pd.DataFrame(salary_records, columns=salary_columns)
         context.log.info(f"Loaded {len(salary_df)} records from Employee_salary.json")
-     
-     # Process Job_satisfaction.csv
+# Process Job_satisfaction.csv
         job_satisfaction_path = Path('Job_satisfaction.csv')
         if not job_satisfaction_path.exists():
             raise FileNotFoundError(f"Input file not found: {job_satisfaction_path}")
@@ -65,4 +64,5 @@ def extract_and_store_data(context):
         
         mental_health_df  =   pd.read_csv(mental_health_path)
         context.log.info(f"Loaded {len(mental_health_df)}  records from Mental_health.csv")
+        
         
