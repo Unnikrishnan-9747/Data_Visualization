@@ -23,9 +23,3 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import seaborn as sns
 from datetime import datetime
 
-
-
- --- Data Extraction and MongoDB Storage ---
-
-        
-        
