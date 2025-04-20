@@ -86,3 +86,8 @@ def extract_and_store_data(context):
             
         db = client["workforce_analytics"]
         
+         # Store job satisfaction data
+        collection_js = db["job_satisfaction"]
+        collection_js.drop()
+        result_js = collection_js.insert_many(df_js.to_dict('records'))
+        context.log.info(f"Inserted {len(result_js.inserted_ids)} documents to job_satisfaction")
