@@ -59,4 +59,30 @@ def extract_and_store_data(context):
         
         df_mh = pd.read_csv(mh_path)
         context.log.info(f"Loaded {len(df_mh)} records from Mental_health.csv")
+        # 3. Employee Data (JSON)
+        emp_path = Path('Employee_salary.json')
+        if not emp_path.exists():
+            raise FileNotFoundError(f"Input file not found: {emp_path}")
+        
+        with open(emp_path) as f:
+            emp_data = json.load(f)['data']
+        
+        df_emp = pd.DataFrame([x[8:] for x in emp_data], 
+                             columns=["Name", "Job_Title", "Department", "Full_or_Part_Time", 
+                                     "Salary_or_Hourly", "Typical_Hours", "Annual_Salary", "Hourly_Rate"])
+        context.log.info(f"Loaded {len(df_emp)} records from Employee_salary.json")
+        
+        # Perform initial EDA
+        perform_eda(df_js, "job_satisfaction", context)
+        perform_eda(df_mh, "mental_health", context)
+        perform_eda(df_emp, "employee_data", context)
+        
+        # Connect to MongoDB
+        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        try:
+            client.server_info()
+        except pymongo.errors.ServerSelectionTimeoutError:
+            raise ConnectionError("Could not connect to MongoDB server")
+            
+        db = client["workforce_analytics"]
         
