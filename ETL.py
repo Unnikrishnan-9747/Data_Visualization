@@ -147,4 +147,26 @@ def extract_from_mongodb(context, status, js_count, mh_count, emp_count):
         context.log.error(f"Error in extract_from_mongodb: {str(e)}")
         context.log.error(traceback.format_exc())
         raise
-
+@op
+def preprocess_data(context, data_dict):
+    """Preprocess data with missing value handling and outlier detection"""
+    js_df = data_dict["job_satisfaction"]
+    mh_df = data_dict["mental_health"]
+    emp_df = data_dict["employee_data"]
+    
+    try:
+        context.log.info("Starting data preprocessing...")
+        
+        # Job Satisfaction Data Preprocessing
+        if '_id' in js_df.columns:
+            js_df = js_df.drop('_id', axis=1)
+        
+        # Missing Values Handling
+        js_df['OBS_VALUE'] = js_df['OBS_VALUE'].fillna(js_df['OBS_VALUE'].median())
+        
+        # Detection of Outliers
+        js_outliers = detect_outliers_isolation_forest(js_df[['OBS_VALUE']].dropna(), ['OBS_VALUE'])
+        js_df['is_outlier'] = False
+        js_df.loc[js_outliers, 'is_outlier'] = True
+        context.log.info(f"Detected {js_outliers.sum()} outliers in job satisfaction data")
+        
