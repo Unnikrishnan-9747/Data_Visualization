@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2.extras import execute_batch
 import json
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import plotly.express as px
 import plotly.io as pio
 import dash
@@ -257,7 +257,7 @@ def preprocess_data(context, data_dict):
         # Outlier detection
 
         emp_out_cols = ['Annual_Salary', 'Hourly_Rate']  
-        
+
         emp_outliers = detect_outliers_isolation_forest(emp_df[emp_out_cols].dropna(), emp_out_cols)
 
         emp_df['is_outlier'] = False
