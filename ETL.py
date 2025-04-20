@@ -96,3 +96,19 @@ def extract_and_store_data(context):
         collection_mh.drop()
         result_mh = collection_mh.insert_many(df_mh.to_dict('records'))
         context.log.info(f"Inserted {len(result_mh.inserted_ids)} documents to mental_health")
+
+        collection_emp = db["employee_data"]
+        collection_emp.drop()
+        result_emp = collection_emp.insert_many(df_emp.to_dict('records'))
+        context.log.info(f"Inserted {len(result_emp.inserted_ids)} documents to employee_data")
+        
+        client.close()
+        
+        yield Output("All data stored in MongoDB", output_name="status")
+        yield Output(len(df_js), output_name="job_satisfaction_count")
+        yield Output(len(df_mh), output_name="mental_health_count")
+        yield Output(len(df_emp), output_name="employee_data_count")
+    except Exception as e:
+        context.log.error(f"Error in extract_and_store_data: {str(e)}")
+        context.log.error(traceback.format_exc())
+        raise
