@@ -91,3 +91,8 @@ def extract_and_store_data(context):
         collection_js.drop()
         result_js = collection_js.insert_many(df_js.to_dict('records'))
         context.log.info(f"Inserted {len(result_js.inserted_ids)} documents to job_satisfaction")
+
+        collection_mh = db["mental_health"]
+        collection_mh.drop()
+        result_mh = collection_mh.insert_many(df_mh.to_dict('records'))
+        context.log.info(f"Inserted {len(result_mh.inserted_ids)} documents to mental_health")
