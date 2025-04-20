@@ -112,3 +112,39 @@ def extract_and_store_data(context):
         context.log.error(f"Error in extract_and_store_data: {str(e)}")
         context.log.error(traceback.format_exc())
         raise
+
+# ETL Process :  Extracting data from MongoDB for preprocessing
+
+@op
+def extract_from_mongodb(context, status, js_count, mh_count, emp_count):
+    """Extract data from MongoDB for processing"""
+    try:
+        context.log.info("Extracting data from MongoDB...")
+        context.log.info(f"Record counts - Job Satisfaction: {js_count}, Mental Health: {mh_count}, Employee: {emp_count}")
+        
+        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        try:
+            client.server_info()
+        except pymongo.errors.ServerSelectionTimeoutError:
+            raise ConnectionError("Could not connect to MongoDB server")
+            
+        db = client["workforce_analytics"]
+        
+        # Extract all datasets
+        js_df = pd.DataFrame(list(db["job_satisfaction"].find({})))
+        mh_df = pd.DataFrame(list(db["mental_health"].find({})))
+        emp_df = pd.DataFrame(list(db["employee_data"].find({})))
+        
+        client.close()
+        
+        return {
+            "job_satisfaction": js_df,
+            "mental_health": mh_df,
+            "employee_data": emp_df,
+            "status": "All data extracted from MongoDB"
+        }
+    except Exception as e:
+        context.log.error(f"Error in extract_from_mongodb: {str(e)}")
+        context.log.error(traceback.format_exc())
+        raise
+
