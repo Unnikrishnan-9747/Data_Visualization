@@ -52,3 +52,11 @@ def extract_and_store_data(context):
         df_js['geo'] = df_js['geo'].map(country_map)
         df_js['OBS_VALUE'] = pd.to_numeric(df_js['OBS_VALUE'], errors='coerce')
       
+    # 2. Mental Health Data
+        mh_path = Path('Mental_health.csv')
+        if not mh_path.exists():
+            raise FileNotFoundError(f"Input file not found: {mh_path}")
+        
+        df_mh = pd.read_csv(mh_path)
+        context.log.info(f"Loaded {len(df_mh)} records from Mental_health.csv")
+        
