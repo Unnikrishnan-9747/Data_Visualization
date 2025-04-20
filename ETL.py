@@ -213,6 +213,7 @@ def preprocess_data(context, data_dict):
         # replace missing data in numerical variables
         
         num_imputer  = SimpleImputer(strategy='median ')
+
         mh_df[numeric_cols] =  num_imputer.fit_transform(mh_df[ numeric_cols ])
         
         # replace missing data in categorical variables
@@ -223,9 +224,62 @@ def preprocess_data(context, data_dict):
         # detection of outliers 
         
         mh_out_cols = ['Age', 'Sleep_Hours', 'Work_Hours', 'Physical_Activity_Hours', 'Social_Media_Usage']
-        mh_outliers = detect_outliers_isolation_forest(mh_df[mh_out_cols], mh_out_cols)
+
+        mh_outliers =  detect_outliers_isolation_forest(mh_df[mh_out_cols], mh_out_cols)
 
         mh_df['is_outlier'] = False
-        mh_df.loc[mh_outliers, 'is_outlier']  = True
+        mh_df.loc[mh_outliers, 'is_outlier']   = True
+
         context.log.info(f" Detected {mh_outliers.sum()} outliers in mental health data")
+
+
+        # 3.Preprocessing of Employee_salary data
+
+        if '_id' in emp_df.columns:
+            emp_df = emp_df.drop('_id', axis=1)
         
+
+        # Handling the  missing values
+
+
+        emp_df['Annual_Salary'] =  pd.to_numeric(emp_df['Annual_Salary'], errors='coerce')
+
+        emp_df['Hourly_Rate'] =   pd.to_numeric(emp_df['Hourly_Rate'], errors='coerce')
+
+        emp_df['Typical_Hours'] = pd.to_numeric(emp_df['Typical_Hours'], errors='coerce')
+        
+
+        emp_df['Annual_Salary'] = emp_df['Annual_Salary'].fillna(emp_df['Annual_Salary'].median())
+        emp_df['Hourly_Rate']   = emp_df['Hourly_Rate'].fillna(emp_df['Hourly_Rate'].median()) 
+
+        emp_df['Typical_Hours'] = emp_df['Typical_Hours'].fillna(40)  
+        
+        # Outlier detection
+
+        emp_out_cols = ['Annual_Salary', 'Hourly_Rate']  
+        
+        emp_outliers = detect_outliers_isolation_forest(emp_df[emp_out_cols].dropna(), emp_out_cols)
+
+        emp_df['is_outlier'] = False
+
+        emp_df.loc[emp_outliers, 'is_outlier']   = True
+        context.log.info(f"Detected {emp_outliers.sum()} outliers in employee data")
+        
+        # Saving the preprocessed data 
+
+        perform_eda(js_df, "preprocessed_job_satisfaction", context)
+        perform_eda(mh_df, "preprocessed_mental_health", context)
+        perform_eda(emp_df, "preprocessed_employee_data", context)
+        
+        return {
+
+            "job_satisfaction": js_df ,
+            "mental_health" : mh_df, 
+            "employee_data": emp_df ,
+            "status" : "Data preprocessing complete "
+        }
+    
+    except Exception as e:
+
+        context.log.error(f"Preprocessing error: {str(e)}")
+        raise
