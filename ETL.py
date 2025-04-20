@@ -27,34 +27,31 @@ from datetime import datetime
 
  --- Data Extraction and MongoDB Storage ---
 
-@op(out={"status": Out(), "salary_count": Out(), "job_satisfaction_count": Out(), "mental_health_count": Out()})
+@op(out={"status": Out(), "job_satisfaction_count": Out(), "mental_health_count": Out(), "employee_data_count": Out()})
 def extract_and_store_data(context):
     """Extract all data sources and store in MongoDB"""
     try:
         context.log.info("Starting data extraction...")
         
-        # Process Employee_salary.json
-        salary_path = Path('Employee_salary.json')
-        if not salary_path.exists():
-            raise FileNotFoundError(f"Input file not found: {salary_path}")
+        # 1. Job Satisfaction Data
+        js_path = Path('Job_satisfaction.csv')
+        if not js_path.exists():
+            raise FileNotFoundError(f"Input file not found: {js_path}")
         
-        with open(salary_path) as f:
-            salary_data = json.load(f)
+        df_js = pd.read_csv(js_path)
+        context.log.info(f"Loaded {len(df_js)} records from Job_satisfaction.csv")
         
-        # Extract the actual data rows from the JSON structure
-        salary_records = salary_data.get('data', [])
-        salary_columns = ['row_id', 'uuid', 'position', 'created_at', 'created_meta', 
-                         'updated_at', 'updated_meta', 'meta', 'date_day', 'statefips', 
-                         'state_name', 'emp_ss40', 'emp_ss60', 'emp_ss65', 'emp_ss70']
-        
-        salary_df = pd.DataFrame(salary_records, columns=salary_columns)
-        context.log.info(f"Loaded {len(salary_df)} records from Employee_salary.json")
-     
-     # Process Job_satisfaction.csv
-        job_satisfaction_path = Path('Job_satisfaction.csv')
-        if not job_satisfaction_path.exists():
-            raise FileNotFoundError(f"Input file not found: {job_satisfaction_path}")
-        
-        job_satisfaction_df = pd.read_csv(job_satisfaction_path)
-        context.log.info(f"Loaded {len(job_satisfaction_df)} records from Job_satisfaction.csv")
-        
+        # Clean job satisfaction data
+        country_map = {
+            'AT': 'Austria', 'BE': 'Belgium', 'BG': 'Bulgaria', 'CH': 'Switzerland',
+            'CY': 'Cyprus', 'CZ': 'Czech Republic', 'DE': 'Germany', 'DK': 'Denmark',
+            'EE': 'Estonia', 'EL': 'Greece', 'ES': 'Spain', 'FI': 'Finland',
+            'FR': 'France', 'HR': 'Croatia', 'HU': 'Hungary', 'IE': 'Ireland',
+            'IT': 'Italy', 'LT': 'Lithuania', 'LU': 'Luxembourg', 'LV': 'Latvia',
+            'MT': 'Malta', 'NL': 'Netherlands', 'NO': 'Norway', 'PL': 'Poland',
+            'PT': 'Portugal', 'RO': 'Romania', 'SE': 'Sweden', 'SI': 'Slovenia',
+            'SK': 'Slovakia'
+        }
+        df_js['geo'] = df_js['geo'].map(country_map)
+        df_js['OBS_VALUE'] = pd.to_numeric(df_js['OBS_VALUE'], errors='coerce')
+      
