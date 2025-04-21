@@ -22,11 +22,62 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import seaborn as sns
 from datetime import datetime
+import missingno as msno
+from sklearn.impute import SimpleImputer
 
+# function for performing EDA
+
+def perform_eda(df, name, context=None):
+   
+    if context:
+        context.log.info(f"\n=== EDA for {name} ===\n")
+        context.log.info(f"Shape: {df.shape}")
+
+        context.log.info("\nData Types:\n" + str(df.dtypes))
+        context.log.info("\nMissing Values:\n" + str(df.isnull().sum()))
+
+        context.log.info("\nDescriptive Stats:\n" + str(df.describe(include='all')))
+    
+    # Save EDA visualizations
+    output_dirs = ["eda_visualizations"]
+    for dir_name in output_dirs:
+        dir_path = Path(dir_name)
+        dir_path.mkdir(exist_ok=True)
+    
+
+    # Missing values matrix
+
+    plt.figure(figsize=(10, 6))
+    msno.matrix(df)
+    plt.title(f'Missing Values - {name}')
+
+    plt.savefig(f'eda_visualizations/missing_values_{name}.png')
+    plt.close()
+    
+    # Numeric features distribution
+    numeric_cols = df.select_dtypes(include=np.number).columns
+    if len(numeric_cols) > 0:
+        df[numeric_cols].hist(bins=20, figsize=(15, 10))
+
+        plt.suptitle(f'Numeric Features Distribution - {name}')
+        plt.savefig(f'eda_visualizations/numeric_dist_{name}.png')
+        plt.close()
+    
+    # Correlation matrix 
+    if len(numeric_cols) > 1:
+        plt.figure(figsize=(10, 8))
+
+        sns.heatmap(df[numeric_cols].corr(), annot=True, cmap='coolwarm')
+        plt.title(f'Correlation Matrix - {name}')
+
+        plt.savefig(f'eda_visualizations/correlation_{name}.png')
+        plt.close()
 
 
 #  Data Extraction and MongoDB Storage 
+
 @op(out={"status": Out(), "job_satisfaction_count": Out(), "mental_health_count": Out(), "employee_data_count": Out()})
+
 def extract_and_store_data(context):
     """Extract all data sources and store in MongoDB"""
     try:
@@ -44,7 +95,8 @@ def extract_and_store_data(context):
 
 
         
-        # Clean job satisfaction data
+        # Cleanning job satisfaction data
+
         country_map = {
             'AT': 'Austria', 'BE': 'Belgium', 'BG': 'Bulgaria', 'CH': 'Switzerland',
             'CY': 'Cyprus', 'CZ': 'Czech Republic', 'DE': 'Germany', 'DK': 'Denmark',
@@ -337,46 +389,54 @@ def transform_data(context, preprocessed_data):
         }) / 2)
 
         # 3. Employee Data Transformation
-        # Create estimated annual salary for hourly workers
+
+
+        # Annual salary for hourly workers
         emp_df['Estimated_Annual'] = emp_df.apply(
             lambda x: x['Hourly_Rate'] * x['Typical_Hours'] * 52 if pd.notna(x['Hourly_Rate']) else x['Annual_Salary'],
             axis=1
         )
         
-        # Create job level categories
+        #job level categories
+
         def categorize_job(title):
             if pd.isna(title):
                 return 'Unknown'
             title = str(title).lower()
             if any(word in title for word in ['manager', 'director', 'chief', 'head', 'lead']):
                 return 'Management'
+            
             elif any(word in title for word in ['senior', 'sr', 'principal']):
                 return 'Senior'
+            
             elif any(word in title for word in ['junior', 'jr', 'associate', 'assistant']):
                 return 'Junior'
+            
             elif any(word in title for word in ['intern', 'trainee']):
                 return 'Intern'
+            
             else:
                 return 'Standard'
         
         emp_df['Job_Level'] = emp_df['Job_Title'].apply(categorize_job)
         
-        # Feature engineering: Salary percentile
+        # Feature engineering--Salary percentile
         emp_df['Salary_Percentile'] = emp_df['Estimated_Annual'].rank(pct=True) * 100
         
-        # Feature engineering: Department size category
+        # Feature engineering---Department size category
         dept_size = emp_df['Department'].value_counts()
+
         emp_df['Dept_Size_Category'] = emp_df['Department'].map(
             lambda x: 'Large' if dept_size[x] > 1000 else
                      'Medium' if dept_size[x] > 100 else 'Small'
         )
         
-        # Log transformation for highly skewed salary data
+        
         emp_df['Log_Salary'] = np.log1p(emp_df['Estimated_Annual'])
         
         context.log.info(f"Transformed data shapes - Job Satisfaction: {js_df.shape}, Mental Health: {mh_df.shape}, Employee: {emp_df.shape}")
         
-        # Save feature-engineered data stats
+        # Sav ingfeature-engineered data stats
         perform_eda(js_df, "transformed_job_satisfaction", context)
         perform_eda(mh_df, "transformed_mental_health", context)
         perform_eda(emp_df, "transformed_employee_data", context)
