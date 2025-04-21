@@ -299,3 +299,45 @@ def transform_data(context, preprocessed_data):
         js_df['country_code'] = js_df['geo'].apply(country_to_alpha3)
         
         js_df['satisfaction_category'] = pd.cut(js_df['OBS_VALUE'],bins=[0, 50, 75, 100, 150, 200],labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+
+          #2. Mental Health Data Transformation
+        mh_df['Gender'] = mh_df['Gender'].str.lower()
+        mh_df['Gender'] = mh_df['Gender'].replace({
+            'male-ish': 'male',
+            'maile': 'male',
+            'trans-female': 'trans female',
+            'something kinda male?': 'other',
+            'cis female': 'female',
+            'cis male': 'male'
+        })
+        
+        # Create mental health severity score
+        severity_map = {'None': 0, 'Low': 1, 'Medium': 2, 'High': 3}
+        mh_df['severity_score'] = mh_df['Severity'].map(severity_map)
+
+
+        stress_map = {'Low': 0, 'Medium': 1, 'High': 2}
+        mh_df['stress_numeric'] = mh_df['Stress_Level'].map(stress_map)
+        
+        # Feature engineering: Worklife balance score
+        scaler = MinMaxScaler()
+        work_hours_scaled = scaler.fit_transform(mh_df[['Work_Hours']].values.reshape(-1, 1))
+        mh_df['work_life_balance'] = (mh_df['Sleep_Hours'] / 8) * 0.4 + (1 - work_hours_scaled.flatten()) * 0.6
+        
+        # Feature engineering: Health risk score
+        mh_df['health_risk_score'] = (mh_df['Smoking_Habit'].map({
+            'Non-Smoker': 0,
+            'Occasional Smoker': 1,
+            'Regular Smoker': 2,
+            'Heavy Smoker': 3
+        }) + mh_df['Alcohol_Consumption'].map({
+            'Non-Drinker': 0,
+            'Social Drinker': 1,
+            'Regular Drinker': 2,
+            'Heavy Drinker': 3
+        })) * 0.5 + (1 - mh_df['Diet_Quality'].map({
+            'Healthy': 0,
+            'Average': 1,
+            'Unhealthy': 2
+        }) / 2)
+        
