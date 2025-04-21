@@ -335,4 +335,59 @@ def transform_data(context, preprocessed_data):
             'Average': 1,
             'Unhealthy': 2
         }) / 2)
+
+        # 3. Employee Data Transformation
+        # Create estimated annual salary for hourly workers
+        emp_df['Estimated_Annual'] = emp_df.apply(
+            lambda x: x['Hourly_Rate'] * x['Typical_Hours'] * 52 if pd.notna(x['Hourly_Rate']) else x['Annual_Salary'],
+            axis=1
+        )
+        
+        # Create job level categories
+        def categorize_job(title):
+            if pd.isna(title):
+                return 'Unknown'
+            title = str(title).lower()
+            if any(word in title for word in ['manager', 'director', 'chief', 'head', 'lead']):
+                return 'Management'
+            elif any(word in title for word in ['senior', 'sr', 'principal']):
+                return 'Senior'
+            elif any(word in title for word in ['junior', 'jr', 'associate', 'assistant']):
+                return 'Junior'
+            elif any(word in title for word in ['intern', 'trainee']):
+                return 'Intern'
+            else:
+                return 'Standard'
+        
+        emp_df['Job_Level'] = emp_df['Job_Title'].apply(categorize_job)
+        
+        # Feature engineering: Salary percentile
+        emp_df['Salary_Percentile'] = emp_df['Estimated_Annual'].rank(pct=True) * 100
+        
+        # Feature engineering: Department size category
+        dept_size = emp_df['Department'].value_counts()
+        emp_df['Dept_Size_Category'] = emp_df['Department'].map(
+            lambda x: 'Large' if dept_size[x] > 1000 else
+                     'Medium' if dept_size[x] > 100 else 'Small'
+        )
+        
+        # Log transformation for highly skewed salary data
+        emp_df['Log_Salary'] = np.log1p(emp_df['Estimated_Annual'])
+        
+        context.log.info(f"Transformed data shapes - Job Satisfaction: {js_df.shape}, Mental Health: {mh_df.shape}, Employee: {emp_df.shape}")
+        
+        # Save feature-engineered data stats
+        perform_eda(js_df, "transformed_job_satisfaction", context)
+        perform_eda(mh_df, "transformed_mental_health", context)
+        perform_eda(emp_df, "transformed_employee_data", context)
+        
+        return {
+            "transformed_js": js_df,
+            "transformed_mh": mh_df,
+            "transformed_emp": emp_df,
+            "status": "Data transformation complete"
+        }
+    except Exception as e:
+        context.log.error(f"Transformation error: {str(e)}")
+        raise
         
