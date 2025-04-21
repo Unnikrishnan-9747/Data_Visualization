@@ -283,3 +283,19 @@ def preprocess_data(context, data_dict):
 
         context.log.error(f"Preprocessing error: {str(e)}")
         raise
+        
+#Transform preprocessed data into structured format with feature engineering
+
+@op
+def transform_data(context, preprocessed_data):
+    js_df = preprocessed_data["job_satisfaction"]
+    mh_df = preprocessed_data["mental_health"]
+    emp_df = preprocessed_data["employee_data"]
+    
+    try:
+        context.log.info("Starting data transformation and feature engineering")
+        
+        # 1. Job Satisfaction Data Transformation
+        js_df['country_code'] = js_df['geo'].apply(country_to_alpha3)
+        
+        js_df['satisfaction_category'] = pd.cut(js_df['OBS_VALUE'],bins=[0, 50, 75, 100, 150, 200],labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
