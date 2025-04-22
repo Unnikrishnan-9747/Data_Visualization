@@ -615,3 +615,63 @@ def load_to_postgres(context, transformed_data):
     finally:
         if conn:
             conn.close()
+
+#Performing analysis on structured data in PostgreSQL
+
+@op
+def analyze_data(context, load_result):
+
+    conn = None
+    try:
+        from sqlalchemy import create_engine
+
+        engine = create_engine('postgresql://postgres:123@localhost:5432/postgres')
+        
+
+        ### need to add analysis part here
+
+
+    except Exception as e:
+        context.log.error(f"Analysis error details: {str(e)}")
+        raise Exception(f"Analysis error: {str(e)}")
+    
+    
+    finally:
+        if conn:
+            conn.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+ # Creating visualizations 
+
+@op
+def create_visualizations(context, analysis_results):
+
+    try:
+        context.log.info("Starting visualization creation...")
+        
+        # Create output directories
+        output_dirs = ["visualizations", "dashboard", "report_images", "eda_visualizations"]
+        for dir_name in output_dirs:
+            dir_path = Path(dir_name)
+            dir_path.mkdir(exist_ok=True)
+            context.log.info(f"Created directory: {dir_path.absolute()}")
+        
+        results = {}
+
+        # need to add the codes for visualisations here
+
+    except Exception as e:
+        context.log.error(f"Error in create_visualizations: {str(e)}")
+        context.log.error(traceback.format_exc())
+        raise
