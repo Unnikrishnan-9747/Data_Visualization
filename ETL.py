@@ -489,3 +489,39 @@ def load_to_postgres(context, transformed_data):
             connect_timeout=5
         )
         cur = conn.cursor()
+       
+# Loading Job Satisfaction preprocessed Dataset to Postgres Database 
+        
+        cur.execute("""
+        DROP TABLE IF EXISTS job_satisfaction;
+        CREATE TABLE job_satisfaction (
+            dataflow TEXT,
+            last_update TEXT,
+            freq TEXT,
+            emp_cont TEXT,
+            yes_no TEXT,
+            lev_satis TEXT,
+            age TEXT,
+            sex TEXT,
+            unit TEXT,
+            geo TEXT,
+            time_period INTEGER,
+            obs_value FLOAT,
+            obs_flag TEXT,
+            conf_status TEXT,  -- Added this missing column
+            is_outlier BOOLEAN,
+            country_code TEXT,
+            satisfaction_category TEXT
+        )
+        """)
+        
+        js_columns = js_df.columns.tolist()
+        js_insert = f"""
+        INSERT INTO job_satisfaction ({','.join(js_columns)})
+        VALUES ({','.join(['%s']*len(js_columns))})
+        """
+        
+        js_records = [tuple(None if pd.isna(x) else x for x in record) 
+                     for record in js_df.to_records(index=False)]
+        execute_batch(cur, js_insert, js_records, page_size=1000)
+        
