@@ -450,4 +450,42 @@ def transform_data(context, preprocessed_data):
     except Exception as e:
         context.log.error(f"Transformation error: {str(e)}")
         raise
-        
+       
+# Connecting to Local Postgres Database
+
+@op
+def load_to_postgres(context, transformed_data):
+    """Load structured data into PostgreSQL"""
+    js_df = transformed_data["transformed_js"]
+    mh_df = transformed_data["transformed_mh"]
+    emp_df = transformed_data["transformed_emp"]
+    
+    context.log.info(f"Job Satisfaction columns: {js_df.columns.tolist()}")
+    context.log.info(f"Mental Health columns: {mh_df.columns.tolist()}")
+    context.log.info(f"Employee columns: {emp_df.columns.tolist()}")
+    
+    def convert_numpy_types(df):
+        for col in df.columns:
+            if pd.api.types.is_integer_dtype(df[col]):
+                df[col] = df[col].astype(object).where(df[col].notna(), None)
+            elif pd.api.types.is_float_dtype(df[col]):
+                df[col] = df[col].astype(object).where(df[col].notna(), None)
+            elif pd.api.types.is_bool_dtype(df[col]):
+                df[col] = df[col].astype(object).where(df[col].notna(), None)
+        return df
+    
+    js_df = convert_numpy_types(js_df)
+    mh_df = convert_numpy_types(mh_df)
+    emp_df = convert_numpy_types(emp_df)
+    
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            database="postgres", 
+            user="postgres", 
+            password="123", 
+            host="localhost", 
+            port="5432",
+            connect_timeout=5
+        )
+        cur = conn.cursor()
