@@ -681,6 +681,167 @@ def analyze_data(context, load_result):
         """, engine)
 
 
+         # 3. Employee salary Data Analysis
+
+        salary_by_department = pd.read_sql("""
+            SELECT department, 
+                   CAST(AVG(estimated_annual) AS DECIMAL(10,2)) as avg_salary,
+                   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY estimated_annual) as median_salary,
+                   CAST(AVG(log_salary) AS DECIMAL(10,2)) as avg_log_salary,
+                   COUNT(*) as count
+            FROM employee_details
+            WHERE estimated_annual IS NOT NULL AND NOT is_outlier
+            GROUP BY department
+            HAVING COUNT(*) > 10
+            ORDER BY avg_salary DESC
+        """, engine)
+        
+        employment_type_dist = pd.read_sql("""
+            SELECT 
+                COALESCE(full_or_part_time, 'Unknown') as full_or_part_time,
+                COALESCE(salary_or_hourly, 'Unknown') as salary_or_hourly,
+                COUNT(*) as count,
+                CAST(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS DECIMAL(10,1)) as percentage
+            FROM employee_details
+            WHERE NOT is_outlier
+            GROUP BY full_or_part_time, salary_or_hourly
+            ORDER BY count DESC
+        """, engine)
+        
+        # Cross-dataset analysis
+
+        occupation_salary_mh = pd.read_sql("""
+            SELECT m.occupation,
+                   CAST(AVG(e.estimated_annual) AS DECIMAL(10,2)) as avg_salary,
+                   CAST(AVG(m.severity_score) AS DECIMAL(10,2)) as avg_severity,
+                   CAST(AVG(m.work_life_balance) AS DECIMAL(10,2)) as avg_work_life_balance,
+                   COUNT(*) as count
+            FROM mental_health m
+            JOIN employee_details e ON LOWER(SPLIT_PART(e.job_title, ' ', 1)) = LOWER(SPLIT_PART(m.occupation, ' ', 1))
+            WHERE e.estimated_annual IS NOT NULL AND NOT m.is_outlier AND NOT e.is_outlier
+            GROUP BY m.occupation
+            HAVING COUNT(*) > 5
+            ORDER BY avg_severity DESC
+        """, engine)
+        
+        # analysis for dashboard
+        
+        work_hours_analysis = pd.read_sql("""
+            SELECT 
+                CASE 
+                    WHEN work_hours < 35 THEN 'Under 35'
+                    WHEN work_hours BETWEEN 35 AND 40 THEN '35-40'
+                    WHEN work_hours BETWEEN 41 AND 50 THEN '41-50'
+                    WHEN work_hours > 50 THEN 'Over 50'
+                    ELSE 'Unknown'
+                END as work_hours_group,
+                CAST(AVG(severity_score) AS DECIMAL(10,2)) as avg_severity,
+                CAST(AVG(work_life_balance) AS DECIMAL(10,2)) as avg_work_life_balance,
+                COUNT(*) as count
+            FROM mental_health
+            WHERE NOT is_outlier
+            GROUP BY work_hours_group
+            ORDER BY avg_severity DESC
+        """, engine)
+        
+        salary_satisfaction = pd.read_sql("""
+            SELECT 
+                CASE 
+                    WHEN e.estimated_annual < 50000 THEN 'Under 50k'
+                    WHEN e.estimated_annual BETWEEN 50000 AND 75000 THEN '50k-75k'
+                    WHEN e.estimated_annual BETWEEN 75001 AND 100000 THEN '75k-100k'
+                    WHEN e.estimated_annual > 100000 THEN 'Over 100k'
+                    ELSE 'Unknown'
+                END as salary_range,
+                CAST(AVG(j.obs_value) AS DECIMAL(10,2)) as avg_satisfaction,
+                COUNT(*) as count
+            FROM employee_details e
+            JOIN job_satisfaction j ON e.department = j.emp_cont
+            WHERE e.estimated_annual IS NOT NULL AND j.obs_value IS NOT NULL 
+                  AND NOT e.is_outlier AND NOT j.is_outlier
+            GROUP BY salary_range
+            ORDER BY avg_satisfaction DESC""", engine)
+        
+        health_risk_analysis = pd.read_sql("""
+            SELECT 
+                CASE 
+                    WHEN health_risk_score < 1 THEN 'Low'
+                    WHEN health_risk_score BETWEEN 1 AND 2 THEN 'Medium'
+                    WHEN health_risk_score > 2 THEN 'High'
+                    ELSE 'Unknown'
+                END as health_risk_group,
+                CAST(AVG(work_life_balance) AS DECIMAL(10,2)) as avg_work_life_balance,
+                CAST(AVG(severity_score) AS DECIMAL(10,2)) as avg_severity,
+                COUNT(*) as count
+            FROM mental_health
+            WHERE NOT is_outlier
+            GROUP BY health_risk_group
+            ORDER BY avg_work_life_balance""", engine)
+
+        salary_dept_level = pd.read_sql("""
+            SELECT 
+                dept_size_category,
+                job_level,
+                ROUND(AVG(estimated_annual)::NUMERIC, 2) as avg_annual_salary,
+                COUNT(*) as count
+            FROM employee_details
+            WHERE estimated_annual IS NOT NULL AND NOT is_outlier
+            GROUP BY dept_size_category, job_level
+            ORDER BY dept_size_category, job_level""", engine)
+
+
+
+        correlation_data = pd.read_sql("""
+            SELECT 
+                m.sleep_hours,
+                m.work_hours,
+                m.severity_score,
+                m.work_life_balance,
+                m.health_risk_score,
+                e.estimated_annual,
+                e.log_salary,
+                (CASE WHEN m.mental_health_condition = 'Yes' THEN 1 ELSE 0 END) as has_condition,
+                (CASE WHEN m.stress_level = 'High' THEN 1 ELSE 0 END) as high_stress
+            FROM mental_health m
+            LEFT JOIN employee_details e ON LOWER(SPLIT_PART(e.job_title, ' ', 1)) = LOWER(SPLIT_PART(m.occupation, ' ', 1))
+            WHERE NOT m.is_outlier AND (e.is_outlier IS NULL OR NOT e.is_outlier)""", engine)
+        
+        # Calculating correlation matrix
+
+        correlation_matrix = correlation_data.corr()
+        
+        # PCA Analysis for dimensionality reduction 
+
+        pca_data = correlation_data.dropna()
+        if len(pca_data) > 0:
+            pca = PCA(n_components=2)
+            pca_result = pca.fit_transform(StandardScaler().fit_transform(pca_data))
+            pca_df = pd.DataFrame(data=pca_result, columns=['PC1', 'PC2'])
+            pca_df['stress_level'] = pca_data['high_stress'].map({0: 'Low', 1: 'High'})
+            pca_variance = pca.explained_variance_ratio_
+        else:
+            pca_df = pd.DataFrame()
+            pca_variance = [0, 0]
+        
+        return {
+            "satisfaction_by_country": satisfaction_by_country,
+            "satisfaction_by_gender": satisfaction_by_gender,
+            "mh_by_occupation": mh_by_occupation,
+            "stress_vs_sleep": stress_vs_sleep,
+            "salary_by_department": salary_by_department,
+            "employment_type_dist": employment_type_dist,
+            "occupation_salary_mh": occupation_salary_mh,
+            "work_hours_analysis": work_hours_analysis,
+            "salary_satisfaction": salary_satisfaction,
+            "health_risk_analysis": health_risk_analysis,
+            "salary_dept_level": salary_dept_level,
+            "correlation_matrix": correlation_matrix,
+            "pca_data": pca_df,
+            "pca_variance": pca_variance,
+            "status": "Analysis complete"
+        }
+
+
     except Exception as e:
         context.log.error(f"Analysis error details: {str(e)}")
         raise Exception(f"Analysis error: {str(e)}")
@@ -696,7 +857,7 @@ def analyze_data(context, load_result):
 
 @op
 def create_visualizations(context, analysis_results):
-   try:
+    try:
         context.log.info("Starting visualization creation...")
         
         output_dirs = ["visualizations", "dashboard", "report_images", "eda_visualizations"]
