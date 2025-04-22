@@ -523,5 +523,47 @@ def load_to_postgres(context, transformed_data):
         
         js_records = [tuple(None if pd.isna(x) else x for x in record) 
                      for record in js_df.to_records(index=False)]
+       
         execute_batch(cur, js_insert, js_records, page_size=1000)
         
+        # 2. Loading Mental Health data to postgres as new table
+      
+        cur.execute("""
+        DROP TABLE IF EXISTS mental_health;
+        CREATE TABLE mental_health (
+            user_id INTEGER,
+            age INTEGER,
+            gender TEXT,
+            occupation TEXT,
+            country TEXT,
+            mental_health_condition TEXT,
+            severity TEXT,
+            consultation_history TEXT,
+            stress_level TEXT,
+            sleep_hours FLOAT,
+            work_hours INTEGER,
+            physical_activity_hours INTEGER,
+            social_media_usage FLOAT,
+            diet_quality TEXT,
+            smoking_habit TEXT,
+            alcohol_consumption TEXT,
+            medication_usage TEXT,
+            is_outlier BOOLEAN,
+            severity_score INTEGER,
+            stress_numeric INTEGER,  
+            work_life_balance FLOAT,
+            health_risk_score FLOAT
+        )
+        """)
+        
+        mh_columns = mh_df.columns.tolist()
+       
+        mh_insert = f"""
+        INSERT INTO mental_health ({','.join(mh_columns)})
+        
+        VALUES ({','.join(['%s']*len(mh_columns))})
+        """
+        
+        mh_records = [tuple(None if pd.isna(x) else x for x in record) for record in mh_df.to_records(index=False)]
+        execute_batch(cur, mh_insert, mh_records, page_size=1000)
+       
