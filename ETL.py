@@ -625,10 +625,28 @@ def analyze_data(context, load_result):
     try:
         from sqlalchemy import create_engine
 
-        engine = create_engine('postgresql://postgres:123@localhost:5432/postgres')
+        engine = create_engine('postgresql://postgres:123@localhost:5432/postgres')   
+       
+         #Analysis of Job_satisfaction dataset
+        satisfaction_by_country = pd.read_sql("""
+            SELECT geo as country, country_code, 
+                   AVG(obs_value) as avg_satisfaction,
+                   COUNT(*) as count
+            FROM job_satisfaction
+            WHERE obs_value IS NOT NULL AND NOT is_outlier
+            GROUP BY geo, country_code
+            ORDER BY avg_satisfaction DESC
+        """, engine)
         
-
-        ### need to add analysis part here
+        satisfaction_by_gender = pd.read_sql("""
+            SELECT sex as gender, lev_satis as satisfaction_level,
+                   AVG(obs_value) as avg_value,
+                   COUNT(*) as count
+            FROM job_satisfaction
+            WHERE obs_value IS NOT NULL AND NOT is_outlier
+            GROUP BY sex, lev_satis
+            ORDER BY sex, avg_value DESC
+        """, engine)
 
 
     except Exception as e:
@@ -644,23 +662,13 @@ def analyze_data(context, load_result):
 
 
 
-
-
-
-
-
-
-
-
  # Creating visualizations 
 
 @op
 def create_visualizations(context, analysis_results):
-
-    try:
+   try:
         context.log.info("Starting visualization creation...")
         
-        # Create output directories
         output_dirs = ["visualizations", "dashboard", "report_images", "eda_visualizations"]
         for dir_name in output_dirs:
             dir_path = Path(dir_name)
