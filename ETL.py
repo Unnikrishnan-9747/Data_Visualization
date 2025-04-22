@@ -647,6 +647,38 @@ def analyze_data(context, load_result):
             GROUP BY sex, lev_satis
             ORDER BY sex, avg_value DESC
         """, engine)
+       
+       # 2. Mental Health Analysis 
+       
+        mh_by_occupation = pd.read_sql("""
+            SELECT occupation, 
+                   COUNT(*) as total,
+                   SUM(CASE WHEN mental_health_condition = 'Yes' THEN 1 ELSE 0 END) as with_condition,
+                   CAST(AVG(severity_score) AS DECIMAL(10,2)) as avg_severity,
+                   CAST(AVG(work_life_balance) AS DECIMAL(10,2)) as avg_work_life_balance,
+                   CAST(AVG(health_risk_score) AS DECIMAL(10,2)) as avg_health_risk
+                   
+            FROM mental_health
+            WHERE NOT is_outlier
+            GROUP BY occupation
+            ORDER BY with_condition DESC
+        """, engine)
+        
+        # modifying the stress vs sleep query
+       
+        stress_vs_sleep = pd.read_sql("""
+            SELECT stress_level, 
+                   CAST(AVG(sleep_hours) AS DECIMAL(10,2)) as avg_sleep,
+                   CAST(AVG(work_hours) AS DECIMAL(10,2)) as avg_work_hours,
+                   CAST(AVG(work_life_balance) AS DECIMAL(10,2)) as avg_work_life_balance,
+                   COUNT(*) as count,
+                   stress_numeric
+                   
+            FROM mental_health
+            WHERE NOT is_outlier
+            GROUP BY stress_level, stress_numeric
+            ORDER BY avg_sleep
+        """, engine)
 
 
     except Exception as e:
@@ -657,8 +689,6 @@ def analyze_data(context, load_result):
     finally:
         if conn:
             conn.close()
-
-
 
 
 
