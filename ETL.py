@@ -566,4 +566,52 @@ def load_to_postgres(context, transformed_data):
         
         mh_records = [tuple(None if pd.isna(x) else x for x in record) for record in mh_df.to_records(index=False)]
         execute_batch(cur, mh_insert, mh_records, page_size=1000)
-       
+
+
+       # 3. loading Employee salary data
+
+        cur.execute("""
+        DROP TABLE IF EXISTS employee_details;
+        CREATE TABLE employee_details (
+            name TEXT,
+            job_title TEXT,
+            department TEXT,
+            full_or_part_time TEXT,
+            salary_or_hourly TEXT,
+            typical_hours FLOAT,
+            annual_salary FLOAT,
+            hourly_rate FLOAT,
+            is_outlier BOOLEAN,
+            estimated_annual FLOAT,
+            job_level TEXT,
+            salary_percentile FLOAT,
+            dept_size_category TEXT,
+            log_salary FLOAT
+        )
+        """)
+        
+        emp_columns = emp_df.columns.tolist()
+        emp_insert = f"""
+        INSERT INTO employee_details ({','.join(emp_columns)})
+        VALUES ({','.join(['%s']*len(emp_columns))})
+        """
+        
+        emp_records = [tuple(None if pd.isna(x) else x for x in record) for record in emp_df.to_records(index=False)]
+        execute_batch(cur, emp_insert, emp_records, page_size=1000)
+        conn.commit()
+
+        context.log.info(f"Successfully loaded data to PostgreSQL")
+        return {"status": "All data loaded to PostgreSQL"}
+    
+
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        context.log.error(f"Database error details: {str(e)}")
+        raise Exception(f"Error loading to PostgreSQL: {str(e)}")
+    
+    
+    finally:
+        if conn:
+            conn.close()
