@@ -100,7 +100,72 @@ def create_dashboard():
             color="stress_level",
             title="Work Hours vs Sleep Hours by Stress Level"
         )
-
+        #Health Risk Barchart
+        health_risk_data=load_data('health_risk_count_bar')
+        fig5=px.bar(
+            health_risk_data,
+            y="health_risk_group",
+            x="count",
+            orientation="h" ,
+            color="health_risk_group",
+            title="Number of Individuals by Health Risk Group",
+            labels= {
+                "health_risk_group":"Health Risk Group",
+                "count":"Number of Individuals"
+            }
+            
+        )
+        
+         #Sunburst Chart
+        employment_data =load_data('employment_sunburst')
+        fig6=px.sunburst(
+            employment_data,
+            path =['full_or_part_time', 'salary_or_hourly'],
+            values='count' ,
+            title='Employment Type Distribution'
+        )
+        
+          #Violin Plot
+        salary_data=load_data('salary_violin')
+        fig7=px.violin(
+            salary_data,
+            y="avg_salary",
+            x="department",
+            box=True,
+            points="all",
+            title="Salary Distribution by Department"
+            
+        )
+        
+        #Bar Chart
+        salary_dept_data =load_data('salary_dept_stack')
+        
+        fig8=px.bar(
+            salary_dept_data,
+            x="dept_size_category",
+            y="avg_annual_salary",
+            color="job_level",
+            barmode="stack",
+            title="Average Annual Salary by Department Size and Job Level",
+            labels={
+                "dept_size_category":"Department Size",
+                "avg_annual_salary":"Average Annual Salary",
+                "job_level":"Job Level"
+            }
+        )
+        
+        #Work Hours Bar
+        work_hours_data=load_data('work_hours_bar')
+        fig9=px.bar(
+            work_hours_data,
+            x="work_hours_group",
+            y="avg_severity",
+            color="avg_work_life_balance",
+            title="Mental Health Severity by Work Hours Group"
+            
+        )
+                
+    
         
 
 
