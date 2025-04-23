@@ -39,9 +39,69 @@ def create_dashboard():
 
             return pd.read_csv(data_path)
         
+        # Create all figures
+        #Geospatial Heatmap
+        satisfaction_data=load_data('satisfaction_map')
+        fig1=px.choropleth(
+            satisfaction_data,
+            locations="country_code",
+            color="avg_satisfaction",
+            hover_name="country",
+            hover_data=["count"],
+            title="Job Satisfaction by Country",
+            color_continuous_scale=px.colors.sequential.Plasma
+        )
+        
+        #Radar Chart
+        gender_data=load_data('satisfaction_radar')
+        fig2 = px.line_polar(
+            gender_data,
+            r="avg_value",
+            theta="satisfaction_level",
+            color="gender",
+            line_close=True,
+            title="Job Satisfaction Levels by Gender"
+        )
+        
+        #Parallel Coordinates
+        stress_data=load_data('parallel_coords')
+        stress_level_map={'Low':0,'Medium':1,'High':2}
+        stress_data['stress_numeric']=stress_data['stress_level'].map(stress_level_map)
 
+        fig3=px.parallel_coordinates(
+            stress_data,
+            color="stress_numeric",
+            dimensions=["avg_sleep", "avg_work_hours", "avg_work_life_balance"],
+            title="Stress Level vs Sleep, Work Hours and Work-Life Balance",
+            color_continuous_scale=px.colors.sequential.Viridis,
+            labels={
+                "avg_sleep":"Avg Sleep Hours",
+                "avg_work_hours":"Avg Work Hours", 
+                "avg_work_life_balance":"Work-Life Balance",
+                "stress_numeric":"Stress Level"
+            }
+        )
 
-          # need to add the figures here
+        fig3.update_layout(
+            coloraxis_colorbar=dict(
+                title="Stress Level",
+                tickvals=[0, 1, 2],
+                ticktext=["Low", "Medium", "High"]
+            )
+        )
+        
+        #Bubble Chart
+        work_life_data=load_data('work_life_bubble')
+        fig4=px.scatter(
+            work_life_data,
+            x="avg_work_hours",
+            y="avg_sleep",
+            size="count",
+            color="stress_level",
+            title="Work Hours vs Sleep Hours by Stress Level"
+        )
+
+        
 
 
          # Set up layout with tabs
