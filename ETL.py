@@ -1105,6 +1105,29 @@ def create_visualizations(context, analysis_results):
         results["work_hours_bar"] = str(img9_path)
         analysis_results["work_hours_analysis"].to_csv("report_images/work_hours_bar_data.csv", index=False)
 
+         #PCA Visualization 
+        if not analysis_results["pca_data"].empty:
+            fig10 = px.scatter(
+                analysis_results["pca_data"],
+                x="PC1",
+                y="PC2",
+                color="stress_level",
+                title=f"PCA of Workplace Factors (Variance: PC1={analysis_results['pca_variance'][0]*100:.1f}%, PC2={analysis_results['pca_variance'][1]*100:.1f}%)",
+                labels={
+                    "PC1": f"Principal Component 1 ({analysis_results['pca_variance'][0]*100:.1f}%)",
+                    "PC2": f"Principal Component 2 ({analysis_results['pca_variance'][1]*100:.1f}%)",
+                    "stress_level": "Stress Level"
+                }
+            )
+            
+            fig10_path = Path("visualizations/pca_plot.html").absolute()
+            fig10.write_html(fig10_path)
+            img10_path = Path("report_images/pca_plot.png").absolute()
+            if not save_plotly_figure(fig10, img10_path, context):
+                raise RuntimeError("Failed to save PCA plot image")
+            results["pca_plot"] = str(img10_path)
+            analysis_results["pca_data"].to_csv("report_images/pca_plot_data.csv", index=False)
+           
          # Correlation Matrix Heatmap
 
         plt.figure(figsize=(12, 10))
