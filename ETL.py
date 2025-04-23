@@ -22,8 +22,15 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import seaborn as sns
 from datetime import datetime
-import missingno as msno
+import geopandas as gpd
+from shapely.geometry import Point
+import pycountry
+import warnings
+from scipy import stats
 from sklearn.impute import SimpleImputer
+from sklearn.ensemble import IsolationForest
+from sklearn.decomposition import PCA
+import missingno as msno
 
 # function for performing EDA
 
@@ -988,6 +995,134 @@ def create_visualizations(context, analysis_results):
         results["health_risk_count_bar"] = str(img5_path)
 
         analysis_results["health_risk_analysis"][["health_risk_group", "count"]].to_csv("report_images/health_risk_count_bar_data.csv", index=False)
+
+         # 3. Employee_salary Data Visualizations
+
+        context.log.info("Creating employee data visualizations...")
+        
+        # Sunburst Chart of Employment Distribution
+        
+        try:
+            # Filter out any rows with None values in the path columns
+            employment_data = analysis_results["employment_type_dist"].dropna(subset=['full_or_part_time', 'salary_or_hourly'])
+
+            fig6 = px.sunburst(
+                employment_data,
+                path=['full_or_part_time', 'salary_or_hourly'],
+                values='count',
+                title='Employment Type Distribution'
+            )
+
+            fig6_path = Path("visualizations/employment_sunburst.html").absolute()
+            fig6.write_html(fig6_path)
+            img6_path = Path("report_images/employment_sunburst.png").absolute()
+            if not save_plotly_figure(fig6, img6_path, context):
+                raise RuntimeError("Failed to save employment sunburst image")
+            results["employment_sunburst"] = str(img6_path)
+            analysis_results["employment_type_dist"].to_csv("report_images/employment_sunburst_data.csv", index=False)
+        except Exception as e:
+            context.log.warning(f"Could not create sunburst chart: {str(e)}")
+
+            # Create a simple bar chart as fallback
+            fig6 = px.bar(
+                analysis_results["employment_type_dist"],
+                x="full_or_part_time",
+                y="count",
+                color="salary_or_hourly",
+                title="Employment Type Distribution (Fallback)"
+            )
+            results["employment_sunburst"] = str(Path("report_images/employment_fallback.png").absolute())
+            fig6.write_image(results["employment_sunburst"])
+        
+        # Violin Plot of Salary Distributions
+
+        fig7 = px.violin(
+            analysis_results["salary_by_department"].nlargest(15, 'avg_salary'),
+            y="avg_salary",
+            x="department",
+            box=True,
+            points="all",
+            title="Salary Distribution by Department (Top 15)"
+        )
+        
+        fig7_path = Path("visualizations/salary_violin.html").absolute()
+        fig7.write_html(fig7_path)
+        img7_path = Path("report_images/salary_violin.png").absolute()
+        if not save_plotly_figure(fig7, img7_path, context):
+            raise RuntimeError("Failed to save salary violin image")
+        results["salary_violin"] = str(img7_path)
+        analysis_results["salary_by_department"].to_csv("report_images/salary_violin_data.csv", index=False)
+        
+        # Scatterplot of Salary vs Mental Health Severity
+
+        # Stacked Bar Chart: Average Salary by Dept Size and Job Level
+        fig8 = px.bar(
+            analysis_results["salary_dept_level"],
+            x="dept_size_category",
+            y="avg_annual_salary",
+            color="job_level",
+            barmode="stack",
+            title="Average Annual Salary by Department Size and Job Level",
+            labels={
+                "dept_size_category": "Department Size",
+                "avg_annual_salary": "Average Annual Salary",
+                "job_level": "Job Level"
+            }
+        )
+
+        fig8_path = Path("visualizations/salary_dept_stack.html").absolute()
+        fig8.write_html(fig8_path)
+
+        img8_path = Path("report_images/salary_dept_stack.png").absolute()
+        if not save_plotly_figure(fig8, img8_path, context):
+            raise RuntimeError("Failed to save salary department stack chart")
+        results["salary_dept_stack"] = str(img8_path)
+        analysis_results["salary_dept_level"].to_csv("report_images/salary_dept_stack_data.csv", index=False)
+
+        
+        # Work Hours Analysis
+
+        fig9 = px.bar(
+            analysis_results["work_hours_analysis"],
+            x="work_hours_group",
+            y="avg_severity",
+            color="avg_work_life_balance",
+            title="Mental Health Severity by Work Hours Group",
+            labels={
+                "work_hours_group": "Weekly Work Hours",
+                "avg_severity": "Average Mental Health Severity",
+                "avg_work_life_balance": "Work-Life Balance"
+            }
+        )
+        
+        fig9_path = Path("visualizations/work_hours_bar.html").absolute()
+        fig9.write_html(fig9_path)
+        img9_path = Path("report_images/work_hours_bar.png").absolute()
+
+
+        if not save_plotly_figure(fig9, img9_path, context):
+            raise RuntimeError("Failed to save work hours bar image")
+        results["work_hours_bar"] = str(img9_path)
+        analysis_results["work_hours_analysis"].to_csv("report_images/work_hours_bar_data.csv", index=False)
+
+         # Correlation Matrix Heatmap
+
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(analysis_results["correlation_matrix"], annot=True, cmap='coolwarm', center=0, fmt=".2f")
+
+        plt.title('Correlation Matrix of Workplace Factors')
+        
+        img11_path = Path("report_images/correlation_matrix.png").absolute()
+        plt.savefig(img11_path, bbox_inches='tight')
+        plt.close()
+
+
+        results["correlation_matrix"] = str(img11_path)
+        analysis_results["correlation_matrix"].to_csv("report_images/correlation_matrix_data.csv", index=True)
+
+
+
+
    
     except Exception as e:
         context.log.error(f"Error in create_visualizations: {str(e)}")
