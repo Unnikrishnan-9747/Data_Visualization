@@ -868,8 +868,48 @@ def create_visualizations(context, analysis_results):
         
         results = {}
 
-        # need to add the codes for visualisations here
-
+        # Job Satisfaction Visualizations
+        context.log.info("Creating job satisfaction visualizations")
+        
+        # Geospatial Heatmap of Job Satisfaction
+        fig1 = px.choropleth(
+            analysis_results["satisfaction_by_country"],
+            locations="country_code",
+            color="avg_satisfaction",
+            hover_name="country",
+            hover_data=["count"],
+            title="Job Satisfaction by Country",
+            color_continuous_scale=px.colors.sequential.Plasma
+        )
+        
+        fig1_path = Path("visualizations/satisfaction_map.html").absolute()
+        fig1.write_html(fig1_path)
+        img1_path = Path("report_images/satisfaction_map.png").absolute()
+        if not save_plotly_figure(fig1, img1_path, context):
+            raise RuntimeError("Failed to save satisfaction map image")
+        results["satisfaction_map"] = str(img1_path)
+        analysis_results["satisfaction_by_country"].to_csv("report_images/satisfaction_map_data.csv", index=False)
+        
+        # Radar Chart of Satisfaction by Gender
+        fig2 = px.line_polar(
+            analysis_results["satisfaction_by_gender"],
+            r="avg_value",
+            theta="satisfaction_level",
+            color="gender",
+            line_close=True,
+            title="Job Satisfaction Levels by Gender"
+        )
+        
+        fig2_path = Path("visualizations/satisfaction_radar.html").absolute()
+        fig2.write_html(fig2_path)
+        img2_path = Path("report_images/satisfaction_radar.png").absolute()
+        if not save_plotly_figure(fig2, img2_path, context):
+            raise RuntimeError("Failed to save satisfaction radar image")
+        results["satisfaction_radar"] = str(img2_path)
+        analysis_results["satisfaction_by_gender"].to_csv("report_images/satisfaction_radar_data.csv", index=False)
+       
+         # need to add the remaining visualizations
+   
     except Exception as e:
         context.log.error(f"Error in create_visualizations: {str(e)}")
         context.log.error(traceback.format_exc())
