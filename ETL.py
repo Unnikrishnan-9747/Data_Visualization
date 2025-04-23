@@ -905,10 +905,89 @@ def create_visualizations(context, analysis_results):
         img2_path = Path("report_images/satisfaction_radar.png").absolute()
         if not save_plotly_figure(fig2, img2_path, context):
             raise RuntimeError("Failed to save satisfaction radar image")
+           
         results["satisfaction_radar"] = str(img2_path)
         analysis_results["satisfaction_by_gender"].to_csv("report_images/satisfaction_radar_data.csv", index=False)
        
-         # need to add the remaining visualizations
+           # 2. Mental Health data Visualizations
+       
+        context.log.info("Creating mental health visualizations...")
+        
+        # Parallel Coordinates Plot
+        fig3 = px.parallel_coordinates(
+            analysis_results["stress_vs_sleep"],
+            color="stress_numeric",
+            dimensions=["avg_sleep", "avg_work_hours", "avg_work_life_balance", "count"],
+            title="Stress Level vs Sleep, Work Hours and Work-Life Balance",
+            labels={
+                "avg_sleep": "Avg Sleep Hours",
+                "avg_work_hours": "Avg Work Hours",
+                "avg_work_life_balance": "Work-Life Balance",
+                "count": "Count",
+                "stress_numeric": "Stress Level"
+            },
+            color_continuous_scale=px.colors.sequential.Viridis
+        )
+        
+        fig3_path = Path("visualizations/parallel_coords.html").absolute()
+        fig3.write_html(fig3_path)
+       
+        img3_path = Path("report_images/parallel_coords.png").absolute()
+        if not save_plotly_figure(fig3, img3_path, context):
+            raise RuntimeError("Failed to save parallel coordinates image")
+           
+        results["parallel_coords"] = str(img3_path)
+        analysis_results["stress_vs_sleep"].to_csv("report_images/parallel_coords_data.csv", index=False)
+        
+        # Bubble Chart of Work-Life Balance
+       
+        fig4 = px.scatter(
+            analysis_results["stress_vs_sleep"],
+            x="avg_work_hours",
+            y="avg_sleep",
+            size="count",
+            color="stress_level",
+            title="Work Hours vs Sleep Hours by Stress Level",
+            labels={
+                "avg_work_hours": "Average Work Hours","avg_sleep": "Average Sleep Hours","count": "Number of Employees"
+            }
+        )
+        
+        fig4_path = Path("visualizations/work_life_bubble.html").absolute()
+        fig4.write_html(fig4_path)
+        img4_path = Path("report_images/work_life_bubble.png").absolute()
+        if not save_plotly_figure(fig4, img4_path, context):
+            raise RuntimeError("Failed to save work-life bubble image")
+        results["work_life_bubble"] = str(img4_path)
+        analysis_results["stress_vs_sleep"].to_csv("report_images/work_life_bubble_data.csv", index=False)
+      
+ 
+
+        # 5. Health Risk Bar - Horizontal Bar Chart: Count by Health Risk Group
+        
+       
+        fig5 = px.bar(
+            analysis_results["health_risk_analysis"],
+            y="health_risk_group",
+            x="count",
+            orientation="h",
+            color="health_risk_group",
+            title="Number of Individuals by Health Risk Group",
+            labels={
+                "health_risk_group": "Health Risk Group","count": "Number of Individuals"
+            }
+        )
+
+        fig5_path = Path("visualizations/health_risk_count_bar.html").absolute()
+        fig5.write_html(fig5_path)
+
+        img5_path = Path("report_images/health_risk_count_bar.png").absolute()
+        if not save_plotly_figure(fig5, img5_path, context):
+            raise RuntimeError("Failed to save health risk count bar image")
+
+        results["health_risk_count_bar"] = str(img5_path)
+
+        analysis_results["health_risk_analysis"][["health_risk_group", "count"]].to_csv("report_images/health_risk_count_bar_data.csv", index=False)
    
     except Exception as e:
         context.log.error(f"Error in create_visualizations: {str(e)}")
