@@ -32,6 +32,56 @@ from sklearn.ensemble import IsolationForest
 from sklearn.decomposition import PCA
 import missingno as msno
 
+warnings.filterwarnings("ignore")
+
+# Configure Plotly
+pio.kaleido.scope.mathjax = None
+
+#Defining Helper Functions
+
+def save_plotly_figure(fig, filepath, context=None):
+    try:
+        fig.write_image(filepath, engine="kaleido",timeout=10)
+        if context:
+            context.log.info(f"Plotly figure has saved to {filepath}")
+        return True
+    except Exception as e:
+        if context:
+            pass        
+        try:
+            fig_mat=plt.figure()
+            ax=fig_mat.add_subplot(111)            
+            if hasattr(fig, 'data'):
+                for trace in fig.data:
+                    if trace.type== 'scatter':
+                        ax.plot(trace.x, trace.y, 'o', label=trace.name)
+                    elif trace.type== 'bar':
+                        ax.bar(trace.x, trace.y, label=trace.name)            
+            ax.set_title(fig.layout.title.text if hasattr(fig.layout, 'title') else "")
+            ax.legend()            
+            fig_mat.savefig(filepath)
+            plt.close(fig_mat)
+            if context:
+                context.log.info(f"Saved matplotlib fallback to {filepath}")
+            return True
+        except Exception as mat_error:
+            if context:
+                context.log.error(f"Both Plotly and matplotlib failed: {str(mat_error)}")
+            return False
+
+def country_to_alpha3(country_name):
+    #Converting country name to ISO alpha-3 code
+    try:
+        return pycountry.countries.lookup(country_name).alpha_3
+    except:
+        return None
+
+def detect_outliers_isolation_forest(df, columns, contamination=0.05):
+    #Detecting outliers using Isolation Forest
+    clf=IsolationForest(contamination=contamination, random_state=42)
+    outliers=clf.fit_predict(df[columns])
+    return outliers== -1
+
 # function for performing EDA
 
 def perform_eda(df, name, context=None):
