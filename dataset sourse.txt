@@ -1,8 +1,8 @@
-https://www.kaggle.com/datasets/yaaryiitturan/global-tech-salary-dataset?select=global_tech_salary.txt
-- Global Tech Salary Dataset
+https://catalog.data.gov/dataset/current-employee-names-salaries-and-position-titles
+- Employee salary
 
-https://www.kaggle.com/datasets/iramshahzadi9/remote-work-and-mental-health
--Remote Work & Mental Health
+https://data.europa.eu/data/datasets/fkyvglc24cgvkuadzopciw?locale=en
+- job satisfaction
 
-https://www.kaggle.com/datasets/osmi/mental-health-in-tech-survey
-- Mental Health in Tech Survey
+https://zenodo.org/records/14838680
+- Employee Mental health
