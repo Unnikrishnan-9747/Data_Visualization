@@ -1415,4 +1415,18 @@ if __name__ == '__main__':
         raise
 
 #Workforce analytics pipeline Job for organizing all operations
+@job
+def workforce_analytics_pipeline():    
+    # Extract and store all data sources with multiple outputs
+    status, js_count, mh_count, emp_count = extract_and_store_data()    
+    
+    # Process all data
+    
+    raw_data = extract_from_mongodb(status, js_count, mh_count, emp_count)
+    preprocessed_data = preprocess_data(raw_data)
+    
+    transformed_data = transform_data(preprocessed_data)
+    load_result = load_to_postgres(transformed_data)
+    analysis_results = analyze_data(load_result)
+    visualizations = create_visualizations(analysis_results)
 
