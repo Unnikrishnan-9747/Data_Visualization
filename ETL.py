@@ -1441,13 +1441,4 @@ if __name__ == "__main__":
     recon_job=reconstructable(workforce_analytics_pipeline)
     result=execute_job(recon_job, instance=instance)
     
-      print("\nPipeline executed successfully!")
-        print("Outputs created:")
-        print("Visualizations: visualizations/")
-        print("Dashboard components: dashboard/")
-        print("Report images: report_images/")
-        print("EDA visualizations: eda_visualizations/")        
-        print("\nTo view the dashboard:")
-        print("1. cd dashboard")
-        print("2. python dashboard.py")
-        print("3. Open http://localhost:8050 in your browser\n")
+      
