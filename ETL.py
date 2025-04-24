@@ -1429,6 +1429,7 @@ def workforce_analytics_pipeline():
     load_result = load_to_postgres(transformed_data)
     analysis_results = analyze_data(load_result)
     visualizations = create_visualizations(analysis_results)
+    
 if __name__ == "__main__":
     # Create required directories
     Path("visualizations").mkdir(exist_ok=True)
@@ -1436,9 +1437,25 @@ if __name__ == "__main__":
     Path("report_images").mkdir(exist_ok=True)
     Path("eda_visualizations").mkdir(exist_ok=True)
     
-    # Execute the pipeline
+    # Executing the pipeline
+    
     instance=DagsterInstance.get()
     recon_job=reconstructable(workforce_analytics_pipeline)
     result=execute_job(recon_job, instance=instance)
     
+    if result.success:
+        print("\nPipeline executed successfully!")
+        print("Outputs created:")
+        print("Visualizations: visualizations/")
+        print("Dashboard components: dashboard/")
+        print("Report images: report_images/")
+        print("EDA visualizations: eda_visualizations/")        
+        print("\nTo view the dashboard:")
+        print("1. cd dashboard")
+        print("2. python dashboard.py")
+        print("3. Open http://localhost:8050 in your browser\n")
+        
+    else:
+        print("Pipeline execution failed")
+        print("Check the Dagster logs for error details")
       
